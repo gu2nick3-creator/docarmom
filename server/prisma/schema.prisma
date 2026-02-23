@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDENTE
+  ENTREGUE
+  CANCELADO
+  FINALIZADO
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  REFUNDED
+  CHARGEDBACK
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  subcategories Subcategory[]
+  products      Product[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Subcategory {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products   Product[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, categoryId])
+}
+
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  priceCents    Int
+  categoryId    String
+  subcategoryId String?
+  sizes         Json
+  colors        Json
+  description   String      @db.Text
+  image         String
+  featured      Boolean     @default(false)
+  isNew         Boolean     @default(false)
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Order {
+  id                 String        @id @default(cuid())
+  orderNumber        String        @unique
+  status             OrderStatus   @default(PENDENTE)
+  totalCents         Int
+  items              Json
+  buyer              Json
+  paymentProvider    String        @default("mercadopago")
+  paymentStatus      PaymentStatus @default(PENDING)
+  mpPaymentId        String?
+  mpPreferenceId     String?
+  mpMerchantOrderId  String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+}
